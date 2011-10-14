@@ -24,7 +24,10 @@ setup(name='TwistedEve',
       install_requires=[
           # -*- Extra requirements: -*-
         'Twisted',
-        'tlslite',
+        'tlslite==0.3.9dev',
+      ],
+      dependency_links=[
+        'https://nodeload.github.com/d-mo/tlslite/tarball/master#egg=tlslite-0.3.9dev',
       ],
      entry_points={
          'console_scripts': [
