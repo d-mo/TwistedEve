@@ -1,16 +1,16 @@
 Introduction
 ===============
 Eve has the twisted habit of eavesdropping all communication between her
-friends, Bob and Alice. But she also hates being gossiped upon, so she wants to
-be able to edit any message sent between Bob and Alice on real time, in order to
+friends, Alice and Bob. But she also hates being gossiped upon, so she wants to
+be able to edit any message sent between Alice and Bob in real time, in order to
 replace it with a more acceptable one.
 
 TwistedEve is a tool that facilitates eavesdropping and
 man-in-the-middle attacks.
 
-Assuming that you are in a man-in-the-middle position between Bob and
-Alice, you should be able to redirect all traffic from Bob's client that's
-heading to Alice's server. Forward it to a port of your choice and start
+Assuming that you are in a man-in-the-middle position between Alice and
+Bob, you should be able to redirect all traffic from Alice's client
+heading to Bob's server. Forward it to a port of your choice and start
 TwistedEve on that port. TwistedEve will act as a proxy,
 while logging all exchanged messages and providing you with a backdoor
 to intercept and optionally edit the content of the messages.

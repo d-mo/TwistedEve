@@ -6,12 +6,15 @@ from time import sleep
 from twisted.internet import reactor
 from twisted.python import log
 
-from twistedeve.eveserver import EveServerFactory
-from twistedeve.bobproxy import BobProxyFactory
+from twistedeve.attackshell import AttackShellFactory
+from twistedeve.client2server import Client2ServerProxyFactory
 
 
 def main():
+    
+    # Parse command line options
     parser = optparse.OptionParser()
+    
     parser.add_option('-b', '--bind', dest='bind', help='address to bind to',
                       metavar='HOST:PORT', default='0.0.0.0:8000')
     parser.add_option('-f', '--forward', dest='target',
@@ -23,15 +26,11 @@ def main():
     parser.add_option('-d', '--delay', dest='delay',
                       help='number of seconds to delay messages if attacker ' \
                            'is connected', default='3')
-    """
-    parser.add_option('-t', '--tls', dest='tls',
-                      help='[auto] start TLS or, [wait] for STARTTLS msg',
-                      metavar = "[auto|wait]", default='wait')
     parser.add_option('-k', '--key', dest='key',
-                      help='TLS key file', default=None)
-    parser.add_option('-c', '--crt', dest='crt',
-                      help='TLS certificate file', default=None)
-    """
+                      help='TLS private key file', default=None)
+    parser.add_option('-s', '--script', dest='script',
+                      help='script file for auto-filtering', default=None)
+    
     (options, args) = parser.parse_args()
 
     if not options.target:
@@ -95,27 +94,44 @@ def main():
     else:
         options.attacker = ('0.0.0.0', 31337)
 
-    """ctx = stx = False
-    if options.key and options.crt:
+    # open key file
+    privateKey = None
+    if options.key:
         try:
-            stx = ServerTLSContext(
-                privateKeyFileName=options.key,
-                certificateFileName=options.crt,
-            )
-            ctx = ClientTLSContext()
-            print "TLS key and cert loaded"
+            s = open(options.key).read()
+            x509 = X509()
+            x509.parse(s)
+            certChain = X509CertChain([x509])
+            s = open(options.key).read()
+            privateKey = parsePEMKey(s, private=True)
+            print "TLS key loaded"
         except Exception as e:
-            print "Invalid TLS key and/or cert file"
-    """
-
-    eve = []
+            print "Invalid TLS key file"
+            sys.exit(1)
+    
+    if options.script:
+        try:
+            ns = {'filter': None}
+            f = open(options.script)
+            code = f.read()
+            exec code in ns
+            if not ns['filter']:
+                print "paparia"
+        except Exception as e:
+            print e
+            print options.script
+            print "Invalid script file. Check out the examples in the scripts directory"
+            sys.exit(1)
+            
+    filter = ns['filter']
+    attacker = []
 
     log.startLogging(sys.stdout)
 
-    bob_proxy = BobProxyFactory(options.target[0], options.target[1], eve)
-    eve_server = EveServerFactory(delay, eve)
-    reactor.listenTCP(options.bind[1], bob_proxy,
+    client2server_proxy = Client2ServerProxyFactory(options.target[0], options.target[1], attacker)
+    attack_server = AttackShellFactory(delay, filter, attacker)
+    reactor.listenTCP(options.bind[1], client2server_proxy,
                       interface=options.bind[0])
-    reactor.listenTCP(options.attacker[1], eve_server,
+    reactor.listenTCP(options.attacker[1], attack_server,
                       interface=options.attacker[0])
     reactor.run()

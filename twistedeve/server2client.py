@@ -2,10 +2,11 @@ from twisted.internet.protocol import ClientFactory
 from twisted.protocols.portforward import Proxy
 
 
-class AliceProxy(Proxy):
+class Server2ClientProxy(Proxy):
     """
-        Receives from Alice and forwards to Bob, unless Eve is around, in which
-        case she gets to read and perhaps edit the message first
+        Receives from the server and forwards to the client, unless an
+        attack is underway, in which case the message gets intercepted
+        and perhaps edited first
     """
     def __init__(self):
         self.tlsStarted = False
@@ -20,19 +21,19 @@ class AliceProxy(Proxy):
             if l != '':
                 print "\t\t" + repr(l)
 
-        if self.peer.factory.eve:
-            self.peer.factory.eve[0].intercept(data, self.transport,
+        if self.peer.factory.attacker:
+            self.peer.factory.attacker[0].intercept(data, self.transport,
                                                self.peer.transport)
         else:
             try:
                 self.peer.transport.write(data)
             except Exception as e:
-                print "Error forwarding data to Bob: %s" % e
+                print "Error forwarding data to client: %s" % e
 
 
-class AliceProxyFactory(ClientFactory):
+class Server2ClientProxyFactory(ClientFactory):
 
-    protocol = AliceProxy
+    protocol = Server2ClientProxy
 
     def setServer(self, server):
         self.server = server
