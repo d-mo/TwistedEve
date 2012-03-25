@@ -5,34 +5,49 @@ from time import sleep
 
 from twisted.internet import reactor
 from twisted.python import log
+from twisted.protocols.policies import ProtocolWrapper, WrappingFactory
 
 from twistedeve.attackshell import AttackShellFactory
 from twistedeve.client2server import Client2ServerProxyFactory
 
+from tlslite.api import *
 
-def main():
-    
-    # Parse command line options
+def parse_args():
+    """
+        Parse command line arguments
+    """
     parser = optparse.OptionParser()
     
     parser.add_option('-b', '--bind', dest='bind', help='address to bind to',
                       metavar='HOST:PORT', default='0.0.0.0:8000')
-    parser.add_option('-f', '--forward', dest='target',
+    parser.add_option('-t', '--target', dest='target',
                       help='target host and port to forward data',
                       metavar='HOST:PORT')
     parser.add_option('-a', '--attack', dest="attacker",
                       help='host and port for the attacker to connect to',
-                      metavar="HOST:PORT", default='0.0.0.0:31337')
+                      metavar="HOST:PORT", default=None)
     parser.add_option('-d', '--delay', dest='delay',
                       help='number of seconds to delay messages if attacker ' \
                            'is connected', default='3')
     parser.add_option('-k', '--key', dest='key',
                       help='TLS private key file', default=None)
-    parser.add_option('-s', '--script', dest='script',
+    parser.add_option('-c', '--certchain', dest='chain',
+                      help='X.509 cert chain', default=None)
+    parser.add_option('-f', '--filter', dest='filter',
                       help='script file for auto-filtering', default=None)
     
-    (options, args) = parser.parse_args()
+    (options, args) = validate_args(parser)
+    
+    return (options, args)
 
+
+def validate_args(parser):
+    """
+        Check that we got what we need from the command line
+    """
+    (options, args) = parser.parse_args()
+    
+    # Make sure there is a target host to forward data
     if not options.target:
         parser.print_help()
         sys.exit(1)
@@ -51,12 +66,14 @@ def main():
 
     options.target = tuple(target)
 
+    #validate delay
     try:
-        delay = int(options.delay)
+        options.delay = int(options.delay)
     except ValueError:
         print "Invalid delay value"
         sys.exit(1)
 
+    # validate bind address
     if options.bind:
         bind = options.bind.split(':')
 
@@ -75,6 +92,7 @@ def main():
     else:
         options.bind = ('0.0.0.0', 8000)
 
+    # validate attacker
     if options.attacker:
         attacker = options.attacker.split(':')
 
@@ -95,41 +113,57 @@ def main():
         options.attacker = ('0.0.0.0', 31337)
 
     # open key file
-    privateKey = None
+    options.certChain = None
     if options.key:
-        try:
-            s = open(options.key).read()
+        try:           
+            s = open(options.chain).read()
             x509 = X509()
             x509.parse(s)
-            certChain = X509CertChain([x509])
+            options.certChain = X509CertChain([x509])
             s = open(options.key).read()
-            privateKey = parsePEMKey(s, private=True)
+            options.key = parsePEMKey(s, private=True)
             print "TLS key loaded"
-        except Exception as e:
+        except ValueError as e:
             print "Invalid TLS key file"
             sys.exit(1)
-    
-    if options.script:
+
+    # open filter script
+    ns = {'filter': None, 'handshake' : None}
+        
+    if options.filter:
         try:
-            ns = {'filter': None}
-            f = open(options.script)
+            f = open(options.filter)
             code = f.read()
             exec code in ns
             if not ns['filter']:
-                print "paparia"
+                raise
         except Exception as e:
-            print e
-            print options.script
             print "Invalid script file. Check out the examples in the scripts directory"
-            sys.exit(1)
-            
-    filter = ns['filter']
+            sys.exit(1)  
+              
+    options.filter = ns['filter']
+    options.handshake = ns['handshake'] 
+    
+    return (options, args)
+
+
+def main():
+
+    (options, args) = parse_args()
+    
     attacker = []
 
     log.startLogging(sys.stdout)
-
-    client2server_proxy = Client2ServerProxyFactory(options.target[0], options.target[1], attacker)
-    attack_server = AttackShellFactory(delay, filter, attacker)
+    if options.key:
+        c2sp_factory = Client2ServerProxyFactory
+        #c2sp_factory.protocol = TLSTwistedProtocolWrapper
+    else:
+        c2sp_factory = Client2ServerProxyFactory
+    
+    client2server_proxy = c2sp_factory(options.target[0], options.target[1], 
+                                       options.filter, options.handshake, 
+                                       options.key, options.certChain, attacker)
+    attack_server = AttackShellFactory(options.delay, options.filter, attacker)
     reactor.listenTCP(options.bind[1], client2server_proxy,
                       interface=options.bind[0])
     reactor.listenTCP(options.attacker[1], attack_server,

@@ -12,10 +12,15 @@ class Server2ClientProxy(Proxy):
         self.tlsStarted = False
 
     def connectionMade(self):
+        self.packetCount = 0
         self.peer.setPeer(self)
+        if self.peer.factory.handshake:
+            self.peer.factory.handshake(self)
         self.peer.transport.resumeProducing()
 
     def dataReceived(self, data):
+        self.packetCount += 1
+        
         lines = data.split('\r\n')
         for l in lines:
             if l != '':
@@ -24,6 +29,13 @@ class Server2ClientProxy(Proxy):
         if self.peer.factory.attacker:
             self.peer.factory.attacker[0].intercept(data, self.transport,
                                                self.peer.transport)
+        elif self.peer.factory.filter:
+            try:
+                filtered_data = self.peer.factory.filter(self.packetCount-1, data, self.transport, self.peer.transport)
+                if filtered_data != data:
+                    print "changed some data"
+            except Exception as e:
+                print "Error forwarding filtered data to client: %s" % e
         else:
             try:
                 self.peer.transport.write(data)

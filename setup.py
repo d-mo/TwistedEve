@@ -18,13 +18,14 @@ setup(name='TwistedEve',
       author_email='dimo@unweb.me',
       url='https://unweb.me/projects/twistedeve',
       license='AGPL',
-      packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
+      packages=find_packages('src'),
+      package_dir = {'':'src'},      
       include_package_data=True,
       zip_safe=False,
       install_requires=[
           # -*- Extra requirements: -*-
         'Twisted',
-        'tlslite==0.3.9dev',
+        'tlslite>0.3.8',
       ],
       dependency_links=[
         'https://nodeload.github.com/d-mo/tlslite/tarball/master#egg=tlslite-0.3.9dev',
