@@ -112,20 +112,6 @@ def validate_args(parser):
     else:
         options.attacker = ('0.0.0.0', 31337)
 
-    # open key file
-    options.certChain = None
-    if options.key:
-        try:           
-            s = open(options.chain).read()
-            x509 = X509()
-            x509.parse(s)
-            options.certChain = X509CertChain([x509])
-            s = open(options.key).read()
-            options.key = parsePEMKey(s, private=True)
-            print "TLS key loaded"
-        except ValueError as e:
-            print "Invalid TLS key file"
-            sys.exit(1)
 
     # open filter script
     ns = {'filter': None, 'handshake' : None}
@@ -143,7 +129,26 @@ def validate_args(parser):
               
     options.filter = ns['filter']
     options.handshake = ns['handshake'] 
-    
+
+    # open key file
+    options.certChain = None
+    if options.key:
+        try:
+            if options.chain:
+                s = open(options.chain).read()
+                x509 = X509()
+                x509.parse(s)
+                options.certChain = X509CertChain([x509])
+            s = open(options.key).read()
+            options.key = parsePEMKey(s, private=True)
+            print "TLS key loaded"
+            if not options.handshake:
+                from twistedeve.filters.tls import handshake
+                options.handshake = handshake
+        except ValueError as e:
+            print "Invalid TLS key file"
+            sys.exit(1)
+                
     return (options, args)
 
 
@@ -154,13 +159,8 @@ def main():
     attacker = []
 
     log.startLogging(sys.stdout)
-    if options.key:
-        c2sp_factory = Client2ServerProxyFactory
-        #c2sp_factory.protocol = TLSTwistedProtocolWrapper
-    else:
-        c2sp_factory = Client2ServerProxyFactory
     
-    client2server_proxy = c2sp_factory(options.target[0], options.target[1], 
+    client2server_proxy = Client2ServerProxyFactory(options.target[0], options.target[1], 
                                        options.filter, options.handshake, 
                                        options.key, options.certChain, attacker)
     attack_server = AttackShellFactory(options.delay, options.filter, attacker)

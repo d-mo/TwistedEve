@@ -20,11 +20,13 @@ class Server2ClientProxy(Proxy):
 
     def dataReceived(self, data):
         self.packetCount += 1
-        
-        lines = data.split('\r\n')
-        for l in lines:
-            if l != '':
-                print "\t\t" + repr(l)
+
+        # just print the data if no filter present
+        if not self.peer.factory.filter:
+            lines = data.split('\r\n')
+            for l in lines:
+                if l != '':
+                    print "\t\t" + repr(l)
 
         if self.peer.factory.attacker:
             self.peer.factory.attacker[0].intercept(data, self.transport,
