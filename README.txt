@@ -70,7 +70,7 @@ Let's first start a simple server that agrees to everything it's told:
     $ nc localhost 50000
     Eve is cool
     I agree that Eve is cool
-    ^D
+    ^C
 
 Manual mode
 ---------------
@@ -112,7 +112,15 @@ bad words will be replaced with nice ones before reaching the server:
     I agree that Eve is a georgeous mermaid
     ^D
     
-Checkout the filters folder for examples on making your own filters.
+Check out the filters folder for examples on making your own filters.
+
+Don't forget to shut down the agree.py server when finished:
+
+    $ fg
+    ./bin/python helpers/agree.py
+    ^C
+    $
+
 
 TLS filtering
 --------------

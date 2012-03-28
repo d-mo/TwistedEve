@@ -135,10 +135,19 @@ def validate_args(parser):
     if options.key:
         try:
             if options.chain:
+                chain = []
                 s = open(options.chain).read()
-                x509 = X509()
-                x509.parse(s)
-                options.certChain = X509CertChain([x509])
+                certs = s.split('-----END CERTIFICATE-----')
+                while certs:
+                    c = certs.pop() + '-----END CERTIFICATE-----'
+                    x509 = X509()
+                    try:
+                        x509.parse(c)
+                        chain.insert(0,x509)
+                    except Exception as e:
+                        continue
+                options.certChain = X509CertChain(chain)
+                
             s = open(options.key).read()
             options.key = parsePEMKey(s, private=True)
             print "TLS key loaded"
