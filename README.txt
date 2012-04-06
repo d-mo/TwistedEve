@@ -29,7 +29,7 @@ Installation
 You can install like any Python egg using setuptools or pip, but it's better
 to use buildout: 
 
-    $ git clone https://d-mo@github.com/d-mo/TwistedEve.git 
+    $ git clone https://github.com/d-mo/TwistedEve.git 
     $ cd TwistedEve
     $ python bootstrap.py
     ...
