@@ -55,9 +55,9 @@ Options:
   -d DELAY, --delay=DELAY
                         number of seconds to delay messages if attacker is
                         connected
-  -k KEY, --key=KEY     TLS private key file
+  -k KEY, --key=KEY     TLS private key file to be used for TLS proxying
   -c CHAIN, --certchain=CHAIN
-                        X.509 cert chain
+                        X.509 certificate chain to be used for TLS proxying
   -f FILTER, --filter=FILTER
                         script file for auto-filtering
 

@@ -30,9 +30,9 @@ def parse_args():
                       help='number of seconds to delay messages if attacker ' \
                            'is connected', default='3')
     parser.add_option('-k', '--key', dest='key',
-                      help='TLS private key file', default=None)
+                      help='TLS private key file to be used for TLS proxying', default=None)
     parser.add_option('-c', '--certchain', dest='chain',
-                      help='X.509 cert chain', default=None)
+                      help='X.509 certificate chain to be used for TLS proxying', default=None)
     parser.add_option('-f', '--filter', dest='filter',
                       help='script file for auto-filtering', default=None)
     
